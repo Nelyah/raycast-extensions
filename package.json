@@ -1,8 +1,8 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
-  "name": "crud-admin-panel",
-  "title": "CRUD Admin Panel",
-  "description": "An admin panel to create, read, update, and delete user entities.",
+  "name": "gitlab-merge-requests",
+  "title": "GitLab Merge Requests",
+  "description": "Search and inspect GitLab Merge Requests (adapted from CRUD Admin Panel template).",
   "icon": "icon.png",
   "author": "thomas",
   "categories": [
@@ -11,26 +11,27 @@
   "license": "MIT",
   "commands": [
     {
-      "name": "search-users",
-      "title": "Search Users",
-      "subtitle": "Admin Panel",
-      "description": "Search all users",
-      "mode": "view"
-    },
-    {
-      "name": "create-user",
-      "title": "Create User",
-      "subtitle": "Admin Panel",
-      "description": "Create a new user",
+      "name": "search-merge-requests",
+      "title": "Search Merge Requests",
+      "subtitle": "GitLab",
+      "description": "Search open merge requests across your GitLab instance",
       "mode": "view"
     }
   ],
   "preferences": [
     {
       "type": "textfield",
-      "name": "endpoint",
-      "title": "Endpoint",
-      "description": "The endpoint of the CRUD API, e.g. https://crudcrud.com/api/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "name": "gitlabInstance",
+      "title": "GitLab Instance URL",
+      "placeholder": "https://gitlab.com",
+      "description": "Base URL of your GitLab instance (no trailing slash).",
+      "required": true
+    },
+    {
+      "type": "password",
+      "name": "gitlabToken",
+      "title": "Personal Access Token",
+      "description": "GitLab PAT with at least read_api scope.",
       "required": true
     }
   ],
