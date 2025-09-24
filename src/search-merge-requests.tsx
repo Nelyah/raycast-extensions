@@ -10,8 +10,8 @@ function stateIcon(mr: MergeRequest) {
 
 export default function SearchMergeRequests() {
   const [search, setSearch] = useState("");
-  const [scope, setScope] = useState<string>("assigned_to_me");
-  const [state, setState] = useState<string>("opened");
+  const [scope, setScope] = useState<string>("created_by_me");
+  const [state, setState] = useState<string>("all");
   const { data, isLoading, revalidate } = useMergeRequests({ search, scope, state });
 
   return (
