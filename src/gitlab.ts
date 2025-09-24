@@ -25,6 +25,11 @@ export interface MergeRequest {
     username: string;
     avatar_url: string | null;
   }>; // present if API includes reviewers
+  head_pipeline?: {
+    id: number;
+    status: string; // running | pending | success | failed | canceled | etc.
+    web_url?: string;
+  };
   source_branch: string;
   target_branch: string;
   draft: boolean;
@@ -119,6 +124,12 @@ export function useMergeRequests(params: UseMergeRequestsParams) {
 
 export function mergeRequestAccessories(mr: MergeRequest) {
   const accessories: any[] = [];
+  if (mr.head_pipeline?.status) {
+    const icon = pipelineStatusToIcon(mr.head_pipeline.status);
+    if (icon) {
+      accessories.push({ icon, tooltip: `Pipeline: ${mr.head_pipeline.status}` });
+    }
+  }
   if (mr.reviewers && mr.reviewers.length > 0) {
     const first = mr.reviewers[0];
     accessories.push({
@@ -135,4 +146,17 @@ export function mergeRequestAccessories(mr: MergeRequest) {
     tooltip: `Updated at ${new Date(mr.updated_at).toLocaleString()}`,
   });
   return accessories;
+}
+
+function pipelineStatusToIcon(status: string) {
+  switch (status) {
+    case "running":
+      return "gitlab-running.png";
+    case "pending":
+      return "gitlab-pending.png";
+    case "success":
+      return "gitlab-success.png";
+    default:
+      return undefined;
+  }
 }
