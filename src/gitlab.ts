@@ -1,5 +1,5 @@
 import fetch from "node-fetch";
-import { getPreferenceValues, showToast, Toast } from "@raycast/api";
+import { getPreferenceValues, showToast, Toast, Icon } from "@raycast/api";
 import { useFetch } from "@raycast/utils";
 
 export interface MergeRequest {
@@ -19,6 +19,12 @@ export interface MergeRequest {
     username: string;
     avatar_url: string | null;
   };
+  reviewers?: Array<{
+    id: number;
+    name: string;
+    username: string;
+    avatar_url: string | null;
+  }>; // present if API includes reviewers
   source_branch: string;
   target_branch: string;
   draft: boolean;
@@ -112,8 +118,21 @@ export function useMergeRequests(params: UseMergeRequestsParams) {
 }
 
 export function mergeRequestAccessories(mr: MergeRequest) {
-  return [
-    { tag: mr.state },
-    { date: new Date(mr.updated_at), tooltip: `Updated at ${new Date(mr.updated_at).toLocaleString()}` },
-  ];
+  const accessories: any[] = [];
+  if (mr.reviewers && mr.reviewers.length > 0) {
+    const first = mr.reviewers[0];
+    accessories.push({
+      icon: first.avatar_url || Icon.Person,
+      tag: "Reviews",
+      tooltip: `Reviewer${mr.reviewers.length > 1 ? 's' : ''}: ${mr.reviewers.map((r) => r.name).join(', ')}`,
+    });
+  }
+  accessories.push({
+    tag: mr.state
+  });
+  accessories.push({
+    date: new Date(mr.updated_at),
+    tooltip: `Updated at ${new Date(mr.updated_at).toLocaleString()}`,
+  });
+  return accessories;
 }
