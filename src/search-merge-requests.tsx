@@ -2,6 +2,12 @@ import { Action, ActionPanel, Icon, List } from "@raycast/api";
 import { useState } from "react";
 import { mergeRequestAccessories, MergeRequest, useMergeRequests } from "./gitlab";
 
+function stateIcon(mr: MergeRequest) {
+  if (mr.merged_at || mr.state === "merged") return "pr-merged.png";
+  if (mr.state === "closed") return "pr-closed.png";
+  return "pr-open.png";
+}
+
 export default function SearchMergeRequests() {
   const [search, setSearch] = useState("");
   const [scope, setScope] = useState<string>("assigned_to_me");
@@ -35,7 +41,7 @@ export default function SearchMergeRequests() {
           key={mr.id}
             title={mr.title}
             subtitle={`${mr.author.name} • !${mr.iid}`}
-            icon={mr.author.avatar_url || Icon.Person}
+            icon={stateIcon(mr)}
             accessories={mergeRequestAccessories(mr)}
             actions={<MRActionPanel mr={mr} onRefresh={revalidate} />}
         />

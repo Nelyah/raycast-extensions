@@ -3,7 +3,7 @@
   "name": "gitlab-merge-requests",
   "title": "GitLab Merge Requests",
   "description": "Search and inspect GitLab Merge Requests (adapted from CRUD Admin Panel template).",
-  "icon": "icon.png",
+  "icon": "gitlab.svg",
   "author": "thomas",
   "categories": [
     "Developer Tools"
