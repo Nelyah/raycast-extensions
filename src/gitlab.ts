@@ -1,6 +1,7 @@
 import fetch from "node-fetch";
-import { getPreferenceValues, showToast, Toast, Icon } from "@raycast/api";
+import { getPreferenceValues, showToast, Toast, Icon, Color } from "@raycast/api";
 import { useFetch } from "@raycast/utils";
+import { useEffect, useState } from "react";
 
 export interface MergeRequest {
   id: number;
@@ -30,6 +31,7 @@ export interface MergeRequest {
     status: string; // running | pending | success | failed | canceled | etc.
     web_url?: string;
   };
+  approved?: boolean; // optional flag (GitLab exposes via separate approvals API or expanded fields)
   source_branch: string;
   target_branch: string;
   draft: boolean;
@@ -130,6 +132,9 @@ export function mergeRequestAccessories(mr: MergeRequest) {
       accessories.push({ icon, tooltip: `Pipeline: ${mr.head_pipeline.status}` });
     }
   }
+  if (mr.approved) {
+    accessories.push({ tag: { value: "APPROVED", color: Color.Green } });
+  }
   if (mr.reviewers && mr.reviewers.length > 0) {
     const first = mr.reviewers[0];
     accessories.push({
@@ -146,6 +151,73 @@ export function mergeRequestAccessories(mr: MergeRequest) {
     tooltip: `Updated at ${new Date(mr.updated_at).toLocaleString()}`,
   });
   return accessories;
+}
+
+// Fetch approval status for each MR (simple variant). Limits to first 25 to reduce requests.
+export function useApprovals(mrs: MergeRequest[]) {
+  const { gitlabToken } = prefs();
+  const [approvedMap, setApprovedMap] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    if (!gitlabToken) return;
+    if (!mrs || mrs.length === 0) return;
+    const controller = new AbortController();
+    const subset = mrs.slice(0, 25); // limit
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        subset.map(async (mr) => {
+          try {
+            const url = buildGitLabURL(`/api/v4/projects/${mr.project_id}/merge_requests/${mr.iid}/approvals`);
+            const res = await fetch(url, {
+              headers: { "PRIVATE-TOKEN": gitlabToken },
+              signal: controller.signal,
+            });
+            if (!res.ok) return undefined;
+            const json = (await res.json()) as {
+              approved?: boolean;
+              approvals_left?: number;
+              approvals_required?: number;
+              approved_by?: Array<{ user?: { id: number; name: string } }>;
+            };
+            // Logic: Show APPROVED only if approvals actually granted, not just because zero required.
+            const approvalsRequired = json.approvals_required ?? 0;
+            const approvalsLeft = json.approvals_left ?? (approvalsRequired === 0 ? 0 : undefined);
+            const approversCount = json.approved_by?.length ?? 0;
+            let isApproved = false;
+            if (approvalsRequired > 0) {
+              // Need explicit approvals; consider approved when left == 0 and at least one approver recorded
+              if (approvalsLeft === 0 && approversCount > 0) {
+                isApproved = true;
+              }
+            } else {
+              // No approvals required: even if API says approved=true, we DO NOT mark as approved to avoid noise
+              isApproved = false;
+            }
+            // Fallback: if API sends approved=true and approversCount>0 treat as approved
+            if (!isApproved && json.approved === true && approversCount > 0) {
+              isApproved = true;
+            }
+            return [mr.id, isApproved] as const;
+          } catch (_e) {
+            return undefined;
+          }
+        })
+      );
+      if (cancelled) return;
+      const map: Record<number, boolean> = {};
+      for (const e of entries) {
+        if (e) map[e[0]] = e[1];
+      }
+      setApprovedMap((prev) => ({ ...prev, ...map }));
+    })();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [gitlabToken, mrs.map((m) => m.id).join(",")]);
+
+  return approvedMap;
 }
 
 function pipelineStatusToIcon(status: string) {

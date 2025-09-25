@@ -1,6 +1,6 @@
 import { Action, ActionPanel, Icon, List } from "@raycast/api";
 import { useState, useCallback } from "react";
-import { mergeRequestAccessories, MergeRequest, useMergeRequests } from "./gitlab";
+import { mergeRequestAccessories, MergeRequest, useMergeRequests, useApprovals } from "./gitlab";
 
 function stateIcon(mr: MergeRequest) {
   if (mr.merged_at || mr.state === "merged") return "pr-merged.png";
@@ -13,6 +13,7 @@ export default function SearchMergeRequests() {
   const [scope, setScope] = useState<string>("created_by_me");
   const [state, setState] = useState<string>("opened");
   const { data, isLoading, revalidate } = useMergeRequests({ search, scope, state });
+  const approvals = useApprovals(data || []);
 
   const changeScope = useCallback(
     (s: string) => {
@@ -43,7 +44,7 @@ export default function SearchMergeRequests() {
             title={mr.title}
             subtitle={`${mr.author.name} • !${mr.iid}`}
             icon={stateIcon(mr)}
-            accessories={mergeRequestAccessories(mr)}
+            accessories={mergeRequestAccessories({ ...mr, approved: approvals[mr.id] === true })}
             actions={<MRActionPanel mr={mr} onRefresh={revalidate} scope={scope} changeScope={changeScope} />}
         />
       ))}
